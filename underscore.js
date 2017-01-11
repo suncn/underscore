@@ -50,6 +50,8 @@
   // the browser, add `_` as a global object.
   // (`nodeType` is checked to ensure that `module`
   // and `exports` are not HTML elements.)
+  
+  // 兼容导出_到node的exports对象或者window
   if (typeof exports != 'undefined' && !exports.nodeType) {
     if (typeof module != 'undefined' && !module.nodeType && module.exports) {
       exports = module.exports = _;
@@ -132,6 +134,8 @@
   };
 
   // An internal function for creating a new object that inherits from another.
+  // 对象原型继承内部方法 解除原型引用关系
+  // 参考 User.prototype=== user.constructor.prototype
   var baseCreate = function(prototype) {
     if (!_.isObject(prototype)) return {};
     if (nativeCreate) return nativeCreate(prototype);
@@ -141,12 +145,15 @@
     return result;
   };
 
+  //  浅获取 取得对象的属性方法 类似bind(key)
+  //  比obj[key]的好处是 防止obj为空空引用错误
   var shallowProperty = function(key) {
     return function(obj) {
       return obj == null ? void 0 : obj[key];
     };
   };
 
+  // 深获取 取得对象的属性 解除引用
   var deepGet = function(obj, path) {
     var length = path.length;
     for (var i = 0; i < length; i++) {
@@ -160,6 +167,7 @@
   // should be iterated as an array or as an object.
   // Related: http://people.mozilla.org/~jorendorff/es6-draft.html#sec-tolength
   // Avoids a very nasty iOS 8 JIT bug on ARM-64. #2094
+  // 
   var MAX_ARRAY_INDEX = Math.pow(2, 53) - 1;
   var getLength = shallowProperty('length');
   var isArrayLike = function(collection) {
@@ -964,19 +972,25 @@
   // ----------------
 
   // Keys in IE < 9 that won't be iterated by `for key in ...` and thus missed.
+  // 根据是否可枚举toString 判断是否存在可枚举bug
   var hasEnumBug = !{toString: null}.propertyIsEnumerable('toString');
+
+  // IE8不可枚举属性
   var nonEnumerableProps = ['valueOf', 'isPrototypeOf', 'toString',
                       'propertyIsEnumerable', 'hasOwnProperty', 'toLocaleString'];
 
   var collectNonEnumProps = function(obj, keys) {
     var nonEnumIdx = nonEnumerableProps.length;
     var constructor = obj.constructor;
+    // 是对象的实例 （&&是取值）拿到对象原型 否则是Object原型
     var proto = _.isFunction(constructor) && constructor.prototype || ObjProto;
 
     // Constructor is a special case.
     var prop = 'constructor';
+    // 有构造函数 并且构造函数不在keys当中
     if (_.has(obj, prop) && !_.contains(keys, prop)) keys.push(prop);
 
+    // --是一个有用的已知数组长度循环方式
     while (nonEnumIdx--) {
       prop = nonEnumerableProps[nonEnumIdx];
       if (prop in obj && obj[prop] !== proto[prop] && !_.contains(keys, prop)) {
@@ -998,6 +1012,7 @@
   };
 
   // Retrieve all the property names of an object.
+  // 取到对象的所有属性名
   _.allKeys = function(obj) {
     if (!_.isObject(obj)) return [];
     var keys = [];
@@ -1310,6 +1325,8 @@
   };
 
   // Is a given variable an object?
+  // 判断变量是否为对象 
+  // 函数也是对象 函数的构造函数是Function 函数是Function对象的实例
   _.isObject = function(obj) {
     var type = typeof obj;
     return type === 'function' || type === 'object' && !!obj;
@@ -1681,3 +1698,4 @@
     });
   }
 }());
+console.log(exports.nodeType);
